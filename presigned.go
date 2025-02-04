@@ -25,6 +25,7 @@ type PresignedInput struct {
 	Timestamp     time.Time
 	ExtraHeaders  map[string]string
 	ExpirySeconds int
+	ExtraQuery    map[string]string
 }
 
 // GeneratePresignedURL creates a Presigned URL that can be used
@@ -75,6 +76,7 @@ func (s3 *S3) GeneratePresignedURL(in PresignedInput) string {
 	h := sha256.New()          // We write the canonical request directly to the SHA256 hash.
 	h.Write([]byte(in.Method)) // HTTP Verb
 	h.Write(newLine)
+
 	h.Write([]byte(path_prefix))
 	h.Write([]byte{'/'})
 	h.Write([]byte(in.ObjectKey)) // CanonicalURL
@@ -86,6 +88,11 @@ func (s3 *S3) GeneratePresignedURL(in PresignedInput) string {
 		"X-Amz-Credential": string(cred),
 		"X-Amz-Date":       amzdate,
 		"X-Amz-Expires":    strconv.Itoa(in.ExpirySeconds),
+	}
+
+	// include extraQuery
+	for k, v := range in.ExtraQuery {
+		queryString[k] = v
 	}
 	//  include the x-amz-security-token incase we are using IAM role or AWS STS
 	if s3.Token != "" {
